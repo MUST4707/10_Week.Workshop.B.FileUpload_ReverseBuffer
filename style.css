@@ -1,0 +1,71 @@
+/* Layout */
+body {
+    font-family: 'Helvetica', sans-serif;
+    background: #f9fafb;
+    color: #111;
+    max-width: 800px;
+    margin: 4rem auto;
+    padding: 2rem;
+    line-height: 1.8;
+}
+
+/* Headings */
+h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+h2 {
+    font-size: 1.4rem;
+    color: #34495e;
+    margin-top: 2rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.25rem;
+}
+
+/* Code Blocks */
+code {
+    background-color: #eef1f5;
+    font-family: Consolas, monospace;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+pre {
+    background-color: #f0f4f8;
+    padding: 1em;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    border-left: 4px solid #3498db;
+}
+
+/* Inputs */
+input[type="file"],
+button {
+    font-size: 1rem;
+    padding: 0.5em 1em;
+    margin: 0.5rem 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background-color: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+/* Footer */
+p:last-child {
+    font-style: italic;
+    margin-top: 3rem;
+    text-align: center;
+    color: #666;
+}

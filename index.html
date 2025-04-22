@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Upload</title>
+    <script type="module" src="script.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <input type="file" accept="audio/*" id="fileUpload">
+    <button id="play">Play.</button>
+
+    <h1>Uploading and Playing Audio with Web Audio API</h1>
+
+    <p>This short tutorial shows you how to upload an audio file and play it using the Web Audio API in JavaScript.</p>
+
+    <h2>1. Set Up the HTML</h2>
+    <p>First, create a file input and a play button:</p>
+
+    <pre><code>&lt;input type="file" id="fileUpload" accept="audio/*"&gt;
+&lt;button id="play"&gt;Play&lt;/button&gt;</code></pre>
+
+    <h2>2. Initialize the AudioContext and GainNode</h2>
+    <p>We start by creating an <code>AudioContext</code> and a <code>GainNode</code> to control volume:</p>
+
+    <pre><code>const ctx = new AudioContext();
+const gain = ctx.createGain();
+let audiobuffer = null;
+
+gain.connect(ctx.destination);</code></pre>
+
+    <h2>3. Load and Decode the Audio File</h2>
+    <p>When a file is uploaded, we read it as an ArrayBuffer and decode it into an AudioBuffer:</p>
+
+    <pre><code>document.getElementById("fileUpload").addEventListener("change", async (event) =&gt; {
+  let file = event.target.files[0];
+  let arraybuf = await file.arrayBuffer();
+  audiobuffer = await ctx.decodeAudioData(arraybuf);
+});</code></pre>
+
+    <h2>4. Play the Audio</h2>
+    <p>When the "Play" button is clicked, we create an <code>AudioBufferSourceNode</code>, assign the buffer, and play it:</p>
+
+    <pre><code>document.getElementById("play").addEventListener("click", () =&gt; {
+  if (audiobuffer) {
+    let sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = audiobuffer;
+    sourceNode.connect(gain);
+    sourceNode.start();
+  }
+});</code></pre>
+
+
+
+</body>
+</html>
