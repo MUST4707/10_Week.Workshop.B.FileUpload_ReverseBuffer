@@ -7,50 +7,170 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <input type="file" accept="audio/*" id="fileUpload">
-    <button id="play">Play.</button>
+    <header>
+        <h1>Uploading, Playing, and Reversing an Audio File</h1>
+        <p class="note">
+            This tutorial uses the Web Audio API. You will: 1) upload a file and decode it into an <code>AudioBuffer</code>, 2) play that buffer, and 3) reverse the buffer for reverse playback.
+        </p>
+    </header>
 
-    <h1>Uploading and Playing Audio with Web Audio API</h1>
+    <section class="controls" aria-label="Player controls">
+        <input id="fileUpload" type="file" accept="audio/*" />
+        <button id="play" type="button">Play</button>
+        <button id="reverse" type="button">Reverse</button>
+        <span id="status" class="note" role="status" aria-live="polite"></span>
+    </section>
 
-    <p>This short tutorial shows you how to upload an audio file and play it using the Web Audio API in JavaScript.</p>
+    <hr />
+    <h2>Goals</h2>
+    <ol>
+        <li>Upload an audio file and decode it into an audio buffer.</li>
+        <li>Play that audio buffer back.</li>
+        <li>Reverse that audio buffer for reverse playback.</li>
+    </ol>
 
-    <h2>1. Set Up the HTML</h2>
-    <p>First, create a file input and a play button:</p>
+    <h2>Steps</h2>
 
-    <pre><code>&lt;input type="file" id="fileUpload" accept="audio/*"&gt;
-&lt;button id="play"&gt;Play&lt;/button&gt;</code></pre>
+    <h3>1. Define three functions</h3>
+    <p>We need three functions. Define them all with empty code:</p>
+    <pre><code>const loadAndDecode = async function (event){}
+const playBuffer = function(){}
+const revAudioBuffer = function() {}
+</code></pre>
 
-    <h2>2. Initialize the AudioContext and GainNode</h2>
-    <p>We start by creating an <code>AudioContext</code> and a <code>GainNode</code> to control volume:</p>
+    <h3>2. Add event listeners</h3>
+    <p>We will need to call those functions from event listeners:</p>
+    <pre><code>document.querySelector("#fileUpload").addEventListener("change", loadAndDecode);
+document.querySelector("#reverse").addEventListener("click", revAudioBuffer);
+document.querySelector("#play").addEventListener("click", playBuffer);
+</code></pre>
 
-    <pre><code>const ctx = new AudioContext();
-const gain = ctx.createGain();
-let audiobuffer = null;
+    <h3>3. The <code>loadAndDecode</code> function</h3>
+    <p>We’re no longer using <code>fetch</code>. The file is passed to the function from the <code>event</code> object as an array, so we want to get index <code>0</code> from that array:</p>
+    <pre><code>const loadAndDecode = async function (event){
+    let file = event.target.files[0];
+    let arraybuf = await file.arrayBuffer();
+    audiobuffer = await ctx.decodeAudioData(arraybuf);
+}
+</code></pre>
 
-gain.connect(ctx.destination);</code></pre>
-
-    <h2>3. Load and Decode the Audio File</h2>
-    <p>When a file is uploaded, we read it as an ArrayBuffer and decode it into an AudioBuffer:</p>
-
-    <pre><code>document.getElementById("fileUpload").addEventListener("change", async (event) =&gt; {
-  let file = event.target.files[0];
-  let arraybuf = await file.arrayBuffer();
-  audiobuffer = await ctx.decodeAudioData(arraybuf);
-});</code></pre>
-
-    <h2>4. Play the Audio</h2>
-    <p>When the "Play" button is clicked, we create an <code>AudioBufferSourceNode</code>, assign the buffer, and play it:</p>
-
-    <pre><code>document.getElementById("play").addEventListener("click", () =&gt; {
-  if (audiobuffer) {
-    let sourceNode = ctx.createBufferSource();
-    sourceNode.buffer = audiobuffer;
+    <h3>4. The <code>playBuffer</code> function</h3>
+    <p>This is similar to before, but we’ll use a separate button to avoid uploading and decoding the audio file every time we want to play it back:</p>
+    <pre><code>const playBuffer = function(){
+    sourceNode = new AudioBufferSourceNode(ctx, {buffer: audiobuffer});
     sourceNode.connect(gain);
     sourceNode.start();
-  }
-});</code></pre>
+}
+</code></pre>
 
+    <p>Let’s avoid possible errors, such as clicking Play before loading a file:</p>
+    <pre><code>const playBuffer = function(){
+    if (audiobuffer){
+        sourceNode = new AudioBufferSourceNode(ctx, {buffer: audiobuffer});
+        sourceNode.connect(gain);
+        sourceNode.start();
+    } else {
+        alert("Please upload an audio file.");
+    }
+}
+</code></pre>
 
+    <p>Or if there’s already a file playing:</p>
+    <pre><code>const playBuffer = function(){
+    if (audiobuffer){
+        if (!sourceNode){
+            sourceNode = new AudioBufferSourceNode(ctx, {buffer: audiobuffer});
+            sourceNode.connect(gain);
+            sourceNode.start();
+        } else {
+            alert("Audio file already playing.");
+        }
+    } else {
+        alert("Please upload an audio file.");
+    }
+}
+</code></pre>
+
+    <p>To make this work fully, we need to delete <code>sourceNode</code> after it finishes. This is also good for memory management. We use the <code>.onended</code> property:</p>
+    <pre><code>const playBuffer = function(){
+    if (audiobuffer){
+        if (!sourceNode){
+            sourceNode = new AudioBufferSourceNode(ctx, {buffer: audiobuffer});
+            sourceNode.onended = ()=>{
+                sourceNode.disconnect();
+                sourceNode = null;
+            }
+            sourceNode.connect(gain);
+            sourceNode.start();
+        } else {
+            alert("Audio file already playing.");
+        }
+    } else {
+        alert("Please upload an audio file.");
+    }
+}
+</code></pre>
+
+    <h3>5. The <code>revAudioBuffer</code> function</h3>
+    <p>Now we want to reverse the audio data in the <code>audioBuffer</code>. We’ll do this in three steps for each channel of audio:</p>
+    <ol>
+        <li>Extract the data with the <code>.getChannelData()</code> method to return a <code>Float32Array</code>.</li>
+        <li>Run the <code>.reverse()</code> method on that array.</li>
+        <li>Copy that reversed array back to the same channel on the <code>audioBuffer</code>.</li>
+    </ol>
+
+    <pre><code>const revAudioBuffer = function(){
+    let ch = 0;
+    let revData = audiobuffer.getChannelData(ch).reverse();
+    audiobuffer.copyToChannel(revData, ch);
+}
+</code></pre>
+
+    <p>To make sure it happens on all channels, no matter how many there are, use a <code>for</code> loop:</p>
+    <pre><code>const revAudioBuffer = function(){
+    for (let ch = 0; ch < audiobuffer.numberOfChannels; ch++){
+        let revData = audiobuffer.getChannelData(ch).reverse();
+        audiobuffer.copyToChannel(revData, ch);
+    }
+}
+</code></pre>
+
+    <h3>Finished Code</h3>
+    <pre><code>const loadAndDecode = async function (event){
+    let file = event.target.files[0];
+    let arraybuf = await file.arrayBuffer();
+    audiobuffer = await ctx.decodeAudioData(arraybuf);
+}
+
+const playBuffer = function(){
+    if (audiobuffer){
+        if (!sourceNode){
+            sourceNode = new AudioBufferSourceNode(ctx, {buffer: audiobuffer});
+            sourceNode.onended = ()=>{
+                sourceNode.disconnect();
+                sourceNode = null;
+            }
+            sourceNode.connect(gain);
+            sourceNode.start();
+        } else {
+            alert("Audio file already playing.");
+        }
+    } else {
+        alert("Please upload an audio file.");
+    }
+}
+
+const revAudioBuffer = function(){
+    for (let ch = 0; ch < audiobuffer.numberOfChannels; ch++){
+        let revData = audiobuffer.getChannelData(ch).reverse();
+        audiobuffer.copyToChannel(revData, ch);
+    }
+}
+
+document.querySelector("#fileUpload").addEventListener("change", loadAndDecode);
+document.querySelector("#play").addEventListener("click", playBuffer);
+document.querySelector("#reverse").addEventListener("click", revAudioBuffer);
+</code></pre>
 
 </body>
 </html>

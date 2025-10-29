@@ -1,10 +1,6 @@
 
 
-
 const ctx = new AudioContext();
-const gain = ctx.createGain();
-let audiobuffer= null;
-
+const gain = new GainNode(ctx);
+let audiobuffer = null, sourceNode= null;
 gain.connect(ctx.destination)
-
-
